@@ -13,6 +13,7 @@ interface IERC20 {
  */
 contract Executor {
     address public immutable owner;
+    bool private locked;
 
     event Executed(address indexed target, bytes data, bytes result);
     event BundleExecuted(address[] indexed targets, bytes[] data);
@@ -25,22 +26,23 @@ contract Executor {
     error NoTargets();
     error IncorectEthValue();
     error ZeroAddress();
+    error ReentrancyGuard();
 
-    /**
-     * @notice Initializes the contract with an owner address
-     * @param _owner The address that will have execution privileges
-     */
-    constructor(address _owner) {
-        if (_owner == address(0)) revert ZeroAddress();
-        owner = _owner;
+    modifier nonReentrant() {
+        if (locked) revert ReentrancyGuard();
+        locked = true;
+        _;
+        locked = false;
     }
 
-    /**
-     * @notice Restricts function access to the contract owner
-     */
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
         _;
+    }
+
+    constructor(address _owner) {
+        if (_owner == address(0)) revert ZeroAddress();
+        owner = _owner;
     }
 
     /**
@@ -50,7 +52,7 @@ contract Executor {
      * @return The returned data from the call
      * @dev Can include ETH value in the call
      */
-    function execute(address target, bytes memory data) public payable onlyOwner returns (bytes memory) {
+    function execute(address target, bytes memory data) public payable onlyOwner nonReentrant returns (bytes memory) {
         if (target == address(0)) revert InvalidTarget();
         if (msg.value == 0 && data.length == 0) revert NoTransactionData();
 
@@ -71,6 +73,7 @@ contract Executor {
         public
         payable
         onlyOwner
+        nonReentrant
     {
         if (targets.length != data.length || data.length != values.length) revert MismatchedArrays();
         if (targets.length == 0) revert NoTargets();
@@ -91,32 +94,11 @@ contract Executor {
     }
 
     /**
-     * @notice Returns the contract's owner
-     * @return address address of the owner
-     */
-    function getOwner() public view returns (address) {
-        return owner;
-    }
-
-    /**
-     * @notice Returns the contract's ETH balance
-     * @return uint256 The balance in wei
-     */
-    function getBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-
-    /**
-     * @notice Allows the contract to receive ETH
-     */
-    receive() external payable {}
-
-    /**
      * @notice Withdraws ETH from the contract
      * @param amount The amount of ETH to withdraw in wei
      * @param to The recipient address
      */
-    function withdrawETH(uint256 amount, address payable to) public onlyOwner {
+    function withdrawETH(uint256 amount, address payable to) public onlyOwner nonReentrant {
         require(address(this).balance >= amount, "Insufficient balance");
         to.transfer(amount);
     }
@@ -127,9 +109,19 @@ contract Executor {
      * @param amount The amount of tokens to withdraw
      * @param to The recipient address
      */
-    function withdrawERC20(address token, uint256 amount, address to) public onlyOwner {
+    function withdrawERC20(address token, uint256 amount, address to) public onlyOwner nonReentrant {
         IERC20 erc20 = IERC20(token);
         require(erc20.balanceOf(address(this)) >= amount, "Insufficient token balance");
         require(erc20.transfer(to, amount), "Token transfer failed");
     }
+
+    function getOwner() public view returns (address) {
+        return owner;
+    }
+
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    receive() external payable {}
 }
