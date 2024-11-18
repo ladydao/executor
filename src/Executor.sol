@@ -7,9 +7,10 @@ interface IERC20 {
 }
 
 /**
- * @title Executor Contract
- * @notice Enables secure execution of arbitrary contract calls by an authorized owner
- * @dev Implements a simple ownership model with ETH and ERC20 management capabilities
+ * @title Executor
+ * @notice Smart contract for executing arbitrary calls with access control
+ * @dev Implements ownership, reentrancy protection, and asset management
+ * @custom:security-contact security@example.com
  */
 contract Executor {
     address public immutable owner;
@@ -28,6 +29,9 @@ contract Executor {
     error ZeroAddress();
     error ReentrancyGuard();
 
+    /**
+     * @dev Prevents reentrancy attacks
+     */
     modifier nonReentrant() {
         if (locked) revert ReentrancyGuard();
         locked = true;
@@ -35,39 +39,53 @@ contract Executor {
         locked = false;
     }
 
+    /**
+     * @dev Restricts function access to contract owner
+     */
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
         _;
     }
 
+    /**
+     * @dev Sets the contract owner
+     * @param _owner Address of the contract owner
+     */
     constructor(address _owner) {
         if (_owner == address(0)) revert ZeroAddress();
         owner = _owner;
     }
 
     /**
-     * @notice Executes a single transaction
-     * @param target The address of the contract to call
-     * @param data The calldata to send
-     * @return The returned data from the call
-     * @dev Can include ETH value in the call
+     * @notice Executes a single transaction with optional ETH value
+     * @dev Reverts if target is zero address or if call fails
+     * @param target Address of contract to call
+     * @param data Function call data
+     * @return result The raw bytes returned from the call
      */
-    function execute(address target, bytes memory data) public payable onlyOwner nonReentrant returns (bytes memory) {
+    function execute(address target, bytes memory data)
+        public
+        payable
+        onlyOwner
+        nonReentrant
+        returns (bytes memory result)
+    {
         if (target == address(0)) revert InvalidTarget();
         if (msg.value == 0 && data.length == 0) revert NoTransactionData();
 
-        (bool success, bytes memory result) = target.call{value: msg.value}(data);
+        bool success;
+        (success, result) = target.call{value: msg.value}(data);
         if (!success) revert ExecutionFailed(0);
 
         emit Executed(target, data, result);
-        return result;
     }
 
     /**
      * @notice Executes multiple transactions in sequence
+     * @dev Reverts if array lengths mismatch or any call fails
      * @param targets Array of contract addresses to call
-     * @param data Array of calldata for each target
-     * @dev Any attached ETH value is sent to the last target in the sequence
+     * @param data Array of call data for each target
+     * @param values Array of ETH values for each call
      */
     function bundleExecute(address[] memory targets, bytes[] memory data, uint256[] memory values)
         public
@@ -94,9 +112,10 @@ contract Executor {
     }
 
     /**
-     * @notice Withdraws ETH from the contract
-     * @param amount The amount of ETH to withdraw in wei
-     * @param to The recipient address
+     * @notice Withdraws ETH from contract
+     * @dev Reverts if insufficient balance
+     * @param amount Amount of ETH in wei
+     * @param to Recipient address
      */
     function withdrawETH(uint256 amount, address payable to) public onlyOwner nonReentrant {
         require(address(this).balance >= amount, "Insufficient balance");
@@ -104,10 +123,11 @@ contract Executor {
     }
 
     /**
-     * @notice Withdraws ERC20 tokens from the contract
-     * @param token The token contract address
-     * @param amount The amount of tokens to withdraw
-     * @param to The recipient address
+     * @notice Withdraws ERC20 tokens from contract
+     * @dev Reverts if insufficient balance
+     * @param token ERC20 token contract address
+     * @param amount Token amount in smallest unit
+     * @param to Recipient address
      */
     function withdrawERC20(address token, uint256 amount, address to) public onlyOwner nonReentrant {
         IERC20 erc20 = IERC20(token);
@@ -115,10 +135,18 @@ contract Executor {
         require(erc20.transfer(to, amount), "Token transfer failed");
     }
 
+    /**
+     * @notice Gets contract owner address
+     * @return Address of contract owner
+     */
     function getOwner() public view returns (address) {
         return owner;
     }
 
+    /**
+     * @notice Gets contract's ETH balance
+     * @return Balance in wei
+     */
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
