@@ -23,12 +23,15 @@ contract Executor {
     error MismatchedArrays();
     error NoTransactionData();
     error NoTargets();
+    error IncorectEthValue();
+    error ZeroAddress();
 
     /**
      * @notice Initializes the contract with an owner address
      * @param _owner The address that will have execution privileges
      */
     constructor(address _owner) {
+        if (_owner == address(0)) revert ZeroAddress();
         owner = _owner;
     }
 
@@ -64,17 +67,23 @@ contract Executor {
      * @param data Array of calldata for each target
      * @dev Any attached ETH value is sent to the last target in the sequence
      */
-    function bundleExecute(address[] memory targets, bytes[] memory data) public payable onlyOwner {
-        if (targets.length != data.length) revert MismatchedArrays();
+    function bundleExecute(address[] memory targets, bytes[] memory data, uint256[] memory values)
+        public
+        payable
+        onlyOwner
+    {
+        if (targets.length != data.length || data.length != values.length) revert MismatchedArrays();
         if (targets.length == 0) revert NoTargets();
 
-        uint256 remainingBalance = address(this).balance;
+        uint256 totalValue = 0;
+        for (uint256 i = 0; i < values.length; i++) {
+            totalValue += values[i];
+        }
+        if (totalValue != msg.value) revert IncorectEthValue();
 
         for (uint256 i = 0; i < targets.length; i++) {
             if (targets[i] == address(0)) revert InvalidTarget();
-
-            uint256 callValue = i == targets.length - 1 ? remainingBalance : 0;
-            (bool success,) = targets[i].call{value: callValue}(data[i]);
+            (bool success,) = targets[i].call{value: values[i]}(data[i]);
             if (!success) revert ExecutionFailed(i);
         }
 
@@ -82,12 +91,11 @@ contract Executor {
     }
 
     /**
-     * @notice Checks if an address is the contract owner
-     * @param account The address to check
-     * @return bool True if the account is the owner
+     * @notice Returns the contract's owner
+     * @return address address of the owner
      */
-    function isOwner(address account) public view returns (bool) {
-        return account == owner;
+    function getOwner() public view returns (address) {
+        return owner;
     }
 
     /**
