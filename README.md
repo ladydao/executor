@@ -1,6 +1,6 @@
 # Executor
 
-Smart contract for executing transactions and managing assets through a proxy pattern.
+Secure execution of arbitrary contract calls by an authorized owner.
 
 ## Overview
 
