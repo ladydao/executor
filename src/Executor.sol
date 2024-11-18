@@ -41,7 +41,7 @@ contract Executor {
 
     function bundleExecute(address[] memory targets, bytes[] memory data) public payable onlyOwner {
         if (targets.length != data.length) revert MismatchedArrays();
-        
+        if (targets.length == 0) revert NoTargets();
 
         uint256 remainingBalance = address(this).balance;
 
