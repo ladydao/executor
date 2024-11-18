@@ -34,11 +34,3 @@ For verbose output:
 ```bash
 forge test -vvv
 ```
-
-### Deployment
-
-Deploy with your preferred network:
-
-```bash
-forge script script/Deploy.s.sol --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
