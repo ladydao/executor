@@ -36,7 +36,7 @@ contract ExecutorExecuteTest is BaseExecutorTest {
 
     function testCannotExecuteEmptyCallWithNoValue() public {
         vm.prank(OWNER);
-        vm.expectRevert(Executor.EmptyArray.selector);
+        vm.expectRevert(Executor.NoTransactionData.selector);
         executor.execute(address(target), "");
     }
 

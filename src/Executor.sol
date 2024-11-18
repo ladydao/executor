@@ -16,7 +16,8 @@ contract Executor {
     error InvalidTarget();
     error ExecutionFailed(uint256 index);
     error MismatchedArrays();
-    error EmptyArray();
+    error NoTransactionData();
+    error NoTargets();
 
     constructor(address _owner) {
         owner = _owner;
@@ -29,7 +30,7 @@ contract Executor {
 
     function execute(address target, bytes memory data) public payable onlyOwner returns (bytes memory) {
         if (target == address(0)) revert InvalidTarget();
-        if (msg.value == 0 && data.length == 0) revert EmptyArray();
+        if (msg.value == 0 && data.length == 0) revert NoTransactionData();
 
         (bool success, bytes memory result) = target.call{value: msg.value}(data);
         if (!success) revert ExecutionFailed(0);
@@ -40,7 +41,7 @@ contract Executor {
 
     function bundleExecute(address[] memory targets, bytes[] memory data) public payable onlyOwner {
         if (targets.length != data.length) revert MismatchedArrays();
-        if (targets.length == 0) revert EmptyArray();
+        
 
         uint256 remainingBalance = address(this).balance;
 

@@ -57,7 +57,7 @@ contract ExecutorBundleTest is BaseExecutorTest {
         bytes[] memory data = new bytes[](0);
 
         vm.prank(OWNER);
-        vm.expectRevert(Executor.EmptyArray.selector);
+        vm.expectRevert(Executor.NoTargets.selector);
         executor.bundleExecute(targets, data);
     }
 
