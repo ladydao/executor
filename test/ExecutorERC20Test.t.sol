@@ -36,4 +36,23 @@ contract ExecutorERC20Test is BaseExecutorTest {
         vm.expectRevert("Insufficient token balance");
         executor.withdrawERC20(address(token), amount + 1, ALICE);
     }
+
+    function testRevertOnFailedERC20Transfer() public {
+        uint256 amount = 1000;
+
+        // Fund the executor
+        token.mint(address(executor), amount);
+
+        // Make transfers fail
+        token.setTransferShouldFail(true);
+
+        // Test withdrawal
+        vm.prank(OWNER);
+        vm.expectRevert("Token transfer failed");
+        executor.withdrawERC20(address(token), amount, ALICE);
+
+        // Verify balances didn't change
+        assertEq(token.balanceOf(address(executor)), amount);
+        assertEq(token.balanceOf(ALICE), 0);
+    }
 }

@@ -16,12 +16,19 @@ contract Target {
 
 contract MockERC20 {
     mapping(address => uint256) public balanceOf;
+    bool public willTransferFail; // Add this line
+
+    // Add this function
+    function setTransferShouldFail(bool _fail) external {
+        willTransferFail = _fail;
+    }
 
     function mint(address to, uint256 amount) external {
         balanceOf[to] += amount;
     }
 
     function transfer(address recipient, uint256 amount) external returns (bool) {
+        if (willTransferFail) return false; // Add this line
         require(balanceOf[msg.sender] >= amount, "Insufficient balance");
         balanceOf[msg.sender] -= amount;
         balanceOf[recipient] += amount;
