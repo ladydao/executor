@@ -35,9 +35,10 @@ contract FailingTarget {
     }
 }
 
-abstract contract BaseExecutorTest is Test {
+contract BaseExecutorTest is Test {
     Executor public executor;
-    Target public target;
+    Target public target1;
+    Target public target2;
     MockERC20 public token;
 
     address constant ALICE = address(0x1);
@@ -50,7 +51,8 @@ abstract contract BaseExecutorTest is Test {
 
     function setUp() public virtual {
         executor = new Executor(OWNER);
-        target = new Target();
+        target1 = new Target();
+        target2 = new Target();
         token = new MockERC20();
 
         // Fund test addresses

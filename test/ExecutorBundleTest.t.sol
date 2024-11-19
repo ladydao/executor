@@ -5,28 +5,25 @@ import "./BaseExecutorTest.t.sol";
 
 contract ExecutorBundleTest is BaseExecutorTest {
     function testBundleExecute() public {
-        Target secondTarget = new Target();
-
         address[] memory targets = new address[](2);
         bytes[] memory data = new bytes[](2);
         uint256[] memory values = new uint256[](2);
 
-        targets[0] = address(target);
-        targets[1] = address(secondTarget);
-        data[0] = abi.encodeWithSelector(target.setNumber.selector, 42);
-        data[1] = abi.encodeWithSelector(Target.setNumber.selector, 99);
+        targets[0] = address(target1);
+        targets[1] = address(target2);
+        data[0] = abi.encodeWithSelector(target1.setNumber.selector, 42);
+        data[1] = abi.encodeWithSelector(target2.setNumber.selector, 99);
         values[0] = 0;
         values[1] = 0;
 
         vm.prank(OWNER);
         executor.bundleExecute(targets, data, values);
 
-        assertEq(target.number(), 42);
-        assertEq(secondTarget.number(), 99);
+        assertEq(target1.number(), 42);
+        assertEq(target2.number(), 99);
     }
 
     function testBundleExecuteWithEther() public {
-        Target secondTarget = new Target();
         uint256 amount1 = 0.5 ether;
         uint256 amount2 = 0.5 ether;
 
@@ -34,10 +31,10 @@ contract ExecutorBundleTest is BaseExecutorTest {
         bytes[] memory data = new bytes[](2);
         uint256[] memory values = new uint256[](2);
 
-        targets[0] = address(target);
-        targets[1] = address(secondTarget);
-        data[0] = abi.encodeWithSelector(target.receiveEther.selector);
-        data[1] = abi.encodeWithSelector(Target.receiveEther.selector);
+        targets[0] = address(target1);
+        targets[1] = address(target2);
+        data[0] = abi.encodeWithSelector(target1.receiveEther.selector);
+        data[1] = abi.encodeWithSelector(target2.receiveEther.selector);
         values[0] = amount1;
         values[1] = amount2;
 
@@ -45,8 +42,8 @@ contract ExecutorBundleTest is BaseExecutorTest {
         vm.deal(OWNER, amount1 + amount2);
         executor.bundleExecute{value: amount1 + amount2}(targets, data, values);
 
-        assertEq(address(target).balance, amount1);
-        assertEq(address(secondTarget).balance, amount2);
+        assertEq(address(target1).balance, amount1);
+        assertEq(address(target2).balance, amount2);
     }
 
     function testBundleExecuteEmitsEvent() public {
@@ -54,10 +51,10 @@ contract ExecutorBundleTest is BaseExecutorTest {
         bytes[] memory data = new bytes[](2);
         uint256[] memory values = new uint256[](2);
 
-        targets[0] = address(target);
-        targets[1] = address(target);
-        data[0] = abi.encodeWithSelector(target.setNumber.selector, 42);
-        data[1] = abi.encodeWithSelector(target.setNumber.selector, 43);
+        targets[0] = address(target1);
+        targets[1] = address(target1);
+        data[0] = abi.encodeWithSelector(target1.setNumber.selector, 42);
+        data[1] = abi.encodeWithSelector(target1.setNumber.selector, 43);
         values[0] = 0;
         values[1] = 0;
 
@@ -88,16 +85,14 @@ contract ExecutorBundleTest is BaseExecutorTest {
     }
 
     function testBundleExecuteGas() public {
-        Target secondTarget = new Target();
-
         address[] memory targets = new address[](2);
         bytes[] memory data = new bytes[](2);
         uint256[] memory values = new uint256[](2);
 
-        targets[0] = address(target);
-        targets[1] = address(secondTarget);
-        data[0] = abi.encodeWithSelector(target.setNumber.selector, 42);
-        data[1] = abi.encodeWithSelector(Target.setNumber.selector, 99);
+        targets[0] = address(target1);
+        targets[1] = address(target2);
+        data[0] = abi.encodeWithSelector(target1.setNumber.selector, 42);
+        data[1] = abi.encodeWithSelector(target2.setNumber.selector, 99);
         values[0] = 0;
         values[1] = 0;
 
@@ -113,10 +108,10 @@ contract ExecutorBundleTest is BaseExecutorTest {
         bytes[] memory data = new bytes[](2);
         uint256[] memory values = new uint256[](2);
 
-        targets[0] = address(target);
-        targets[1] = address(target);
-        data[0] = abi.encodeWithSelector(target.receiveEther.selector);
-        data[1] = abi.encodeWithSelector(target.receiveEther.selector);
+        targets[0] = address(target1);
+        targets[1] = address(target1);
+        data[0] = abi.encodeWithSelector(target1.receiveEther.selector);
+        data[1] = abi.encodeWithSelector(target1.receiveEther.selector);
         values[0] = 0.5 ether;
         values[1] = 0.5 ether;
 
