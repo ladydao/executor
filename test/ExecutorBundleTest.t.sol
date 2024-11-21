@@ -137,7 +137,7 @@ contract ExecutorBundleTest is BaseExecutorTest {
         executor.bundleExecute(targets, data, values);
     }
 
-        function testBundleExecuteWithSingleCall() public {
+    function testBundleExecuteWithSingleCall() public {
         address[] memory targets = new address[](1);
         bytes[] memory data = new bytes[](1);
         uint256[] memory values = new uint256[](1);
@@ -150,5 +150,4 @@ contract ExecutorBundleTest is BaseExecutorTest {
         executor.bundleExecute(targets, data, values);
         assertEq(target1.number(), 42);
     }
-
 }
