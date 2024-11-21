@@ -120,4 +120,35 @@ contract ExecutorBundleTest is BaseExecutorTest {
         vm.expectRevert(Executor.IncorectEthValue.selector);
         executor.bundleExecute{value: 0.5 ether}(targets, data, values);
     }
+
+    function testBundleExecuteWithZeroValues() public {
+        address[] memory targets = new address[](2);
+        bytes[] memory data = new bytes[](2);
+        uint256[] memory values = new uint256[](2);
+
+        targets[0] = address(target1);
+        targets[1] = address(target2);
+        data[0] = "";
+        data[1] = "";
+        values[0] = 0;
+        values[1] = 0;
+
+        vm.prank(OWNER);
+        executor.bundleExecute(targets, data, values);
+    }
+
+        function testBundleExecuteWithSingleCall() public {
+        address[] memory targets = new address[](1);
+        bytes[] memory data = new bytes[](1);
+        uint256[] memory values = new uint256[](1);
+
+        targets[0] = address(target1);
+        data[0] = abi.encodeWithSelector(target1.setNumber.selector, 42);
+        values[0] = 0;
+
+        vm.prank(OWNER);
+        executor.bundleExecute(targets, data, values);
+        assertEq(target1.number(), 42);
+    }
+
 }

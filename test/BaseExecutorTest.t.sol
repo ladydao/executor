@@ -12,6 +12,8 @@ contract Target {
     }
 
     function receiveEther() external payable {}
+
+    fallback() external {}
 }
 
 contract MockERC20 {
