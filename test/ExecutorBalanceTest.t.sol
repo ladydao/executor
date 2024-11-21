@@ -7,7 +7,7 @@ contract ExecutorBalanceTest is BaseExecutorTest {
     function testGetBalance() public {
         assertEq(executor.getBalance(), 0);
         uint256 amount = 1 ether;
-        (bool success,) = address(executor).call{value: amount}("");
+        (bool success, ) = address(executor).call{value: amount}("");
         require(success, "Transfer failed");
         assertEq(executor.getBalance(), amount);
     }

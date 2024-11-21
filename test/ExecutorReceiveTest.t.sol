@@ -8,7 +8,7 @@ contract ExecutorReceiveTest is BaseExecutorTest {
         uint256 amount = 1 ether;
 
         // Send ETH directly to contract
-        (bool success,) = address(executor).call{value: amount}("");
+        (bool success, ) = address(executor).call{value: amount}("");
         assertTrue(success);
         assertEq(address(executor).balance, amount);
     }
@@ -18,11 +18,11 @@ contract ExecutorReceiveTest is BaseExecutorTest {
         uint256 amount2 = 1.5 ether;
 
         vm.prank(ALICE);
-        (bool success1,) = address(executor).call{value: amount1}("");
+        (bool success1, ) = address(executor).call{value: amount1}("");
         assertTrue(success1);
 
         vm.prank(BOB);
-        (bool success2,) = address(executor).call{value: amount2}("");
+        (bool success2, ) = address(executor).call{value: amount2}("");
         assertTrue(success2);
 
         assertEq(address(executor).balance, amount1 + amount2);
@@ -33,7 +33,7 @@ contract ExecutorReceiveTest is BaseExecutorTest {
         bytes memory data = hex"deadbeef";
 
         // Try to send ETH with data
-        (bool success,) = address(executor).call{value: amount}(data);
+        (bool success, ) = address(executor).call{value: amount}(data);
         assertFalse(success);
         assertEq(address(executor).balance, 0);
     }
@@ -42,7 +42,7 @@ contract ExecutorReceiveTest is BaseExecutorTest {
         uint256 amount = 0.1 ether;
 
         for (uint256 i = 0; i < 5; i++) {
-            (bool success,) = address(executor).call{value: amount}("");
+            (bool success, ) = address(executor).call{value: amount}("");
             assertTrue(success);
         }
 

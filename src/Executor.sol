@@ -2,7 +2,11 @@
 pragma solidity ^0.8.19;
 
 interface IERC20 {
-    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
+
     function balanceOf(address account) external view returns (uint256);
 }
 
@@ -63,13 +67,10 @@ contract Executor {
      * @param data Function call data
      * @return result The raw bytes returned from the call
      */
-    function execute(address target, bytes memory data)
-        public
-        payable
-        onlyOwner
-        nonReentrant
-        returns (bytes memory result)
-    {
+    function execute(
+        address target,
+        bytes memory data
+    ) public payable onlyOwner nonReentrant returns (bytes memory result) {
         if (target == address(0)) revert InvalidTarget();
         if (msg.value == 0 && data.length == 0) revert NoTransactionData();
 
@@ -87,13 +88,13 @@ contract Executor {
      * @param data Array of call data for each target
      * @param values Array of ETH values for each call
      */
-    function bundleExecute(address[] memory targets, bytes[] memory data, uint256[] memory values)
-        public
-        payable
-        onlyOwner
-        nonReentrant
-    {
-        if (targets.length != data.length || data.length != values.length) revert MismatchedArrays();
+    function bundleExecute(
+        address[] memory targets,
+        bytes[] memory data,
+        uint256[] memory values
+    ) public payable onlyOwner nonReentrant {
+        if (targets.length != data.length || data.length != values.length)
+            revert MismatchedArrays();
         if (targets.length == 0) revert NoTargets();
 
         uint256 totalValue = 0;
@@ -104,7 +105,7 @@ contract Executor {
 
         for (uint256 i = 0; i < targets.length; i++) {
             if (targets[i] == address(0)) revert InvalidTarget();
-            (bool success,) = targets[i].call{value: values[i]}(data[i]);
+            (bool success, ) = targets[i].call{value: values[i]}(data[i]);
             if (!success) revert ExecutionFailed(i);
         }
 
@@ -117,7 +118,10 @@ contract Executor {
      * @param amount Amount of ETH in wei
      * @param to Recipient address
      */
-    function withdrawETH(uint256 amount, address payable to) public onlyOwner nonReentrant {
+    function withdrawETH(
+        uint256 amount,
+        address payable to
+    ) public onlyOwner nonReentrant {
         require(address(this).balance >= amount, "Insufficient balance");
         to.transfer(amount);
     }
@@ -129,9 +133,16 @@ contract Executor {
      * @param amount Token amount in smallest unit
      * @param to Recipient address
      */
-    function withdrawERC20(address token, uint256 amount, address to) public onlyOwner nonReentrant {
+    function withdrawERC20(
+        address token,
+        uint256 amount,
+        address to
+    ) public onlyOwner nonReentrant {
         IERC20 erc20 = IERC20(token);
-        require(erc20.balanceOf(address(this)) >= amount, "Insufficient token balance");
+        require(
+            erc20.balanceOf(address(this)) >= amount,
+            "Insufficient token balance"
+        );
         require(erc20.transfer(to, amount), "Token transfer failed");
     }
 
