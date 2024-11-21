@@ -29,10 +29,7 @@ contract MockERC20 {
         balanceOf[to] += amount;
     }
 
-    function transfer(
-        address recipient,
-        uint256 amount
-    ) external returns (bool) {
+    function transfer(address recipient, uint256 amount) external returns (bool) {
         if (willTransferFail) return false; // Add this line
         require(balanceOf[msg.sender] >= amount, "Insufficient balance");
         balanceOf[msg.sender] -= amount;

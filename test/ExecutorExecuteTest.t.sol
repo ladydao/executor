@@ -5,10 +5,7 @@ import "./BaseExecutorTest.t.sol";
 
 contract ExecutorExecuteTest is BaseExecutorTest {
     function testExecuteAsOwner() public {
-        bytes memory data = abi.encodeWithSelector(
-            target1.setNumber.selector,
-            42
-        );
+        bytes memory data = abi.encodeWithSelector(target1.setNumber.selector, 42);
         vm.prank(OWNER);
         executor.execute(address(target1), data);
         assertEq(target1.number(), 42);
@@ -16,9 +13,7 @@ contract ExecutorExecuteTest is BaseExecutorTest {
 
     function testExecuteWithEther() public {
         uint256 amount = 1 ether;
-        bytes memory data = abi.encodeWithSelector(
-            target1.receiveEther.selector
-        );
+        bytes memory data = abi.encodeWithSelector(target1.receiveEther.selector);
         vm.prank(OWNER);
         vm.deal(OWNER, amount);
         executor.execute{value: amount}(address(target1), data);
@@ -26,10 +21,7 @@ contract ExecutorExecuteTest is BaseExecutorTest {
     }
 
     function testCannotExecuteAsNonOwner() public {
-        bytes memory data = abi.encodeWithSelector(
-            target1.setNumber.selector,
-            42
-        );
+        bytes memory data = abi.encodeWithSelector(target1.setNumber.selector, 42);
         vm.prank(ALICE);
         vm.expectRevert(Executor.NotOwner.selector);
         executor.execute(address(target1), data);
@@ -37,10 +29,7 @@ contract ExecutorExecuteTest is BaseExecutorTest {
 
     function testCannotExecuteToZeroAddress() public {
         vm.prank(OWNER);
-        bytes memory data = abi.encodeWithSelector(
-            target1.setNumber.selector,
-            42
-        );
+        bytes memory data = abi.encodeWithSelector(target1.setNumber.selector, 42);
         vm.expectRevert(Executor.InvalidTarget.selector);
         executor.execute(address(0), data);
     }
@@ -52,10 +41,7 @@ contract ExecutorExecuteTest is BaseExecutorTest {
     }
 
     function testExecuteGas() public {
-        bytes memory data = abi.encodeWithSelector(
-            target1.setNumber.selector,
-            42
-        );
+        bytes memory data = abi.encodeWithSelector(target1.setNumber.selector, 42);
         uint256 gasBefore = gasleft();
         vm.prank(OWNER);
         executor.execute(address(target1), data);
@@ -64,10 +50,7 @@ contract ExecutorExecuteTest is BaseExecutorTest {
     }
 
     function testExecuteEmitsEvent() public {
-        bytes memory data = abi.encodeWithSelector(
-            target1.setNumber.selector,
-            42
-        );
+        bytes memory data = abi.encodeWithSelector(target1.setNumber.selector, 42);
         bytes memory expectedResult = abi.encode(); // Empty because setNumber doesn't return anything
 
         vm.prank(OWNER);
@@ -78,14 +61,10 @@ contract ExecutorExecuteTest is BaseExecutorTest {
 
     function testExecuteReverts() public {
         FailingTarget failingTarget = new FailingTarget();
-        bytes memory data = abi.encodeWithSelector(
-            failingTarget.alwaysRevert.selector
-        );
+        bytes memory data = abi.encodeWithSelector(failingTarget.alwaysRevert.selector);
 
         vm.prank(OWNER);
-        vm.expectRevert(
-            abi.encodeWithSelector(Executor.ExecutionFailed.selector, 0)
-        );
+        vm.expectRevert(abi.encodeWithSelector(Executor.ExecutionFailed.selector, 0));
         executor.execute(address(failingTarget), data);
     }
 }
