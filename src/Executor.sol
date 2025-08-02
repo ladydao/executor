@@ -100,15 +100,33 @@ contract Executor {
         if (targets.length == 0) revert NoTargets();
 
         uint256 totalValue = 0;
-        for (uint256 i = 0; i < values.length; i++) {
+        for (uint256 i = 0; i < values.length;) {
             totalValue += values[i];
+            unchecked {
+                ++i;
+            }
         }
         if (totalValue != msg.value) revert IncorectEthValue();
 
-        for (uint256 i = 0; i < targets.length; i++) {
-            if (targets[i] == address(0)) revert InvalidTarget();
-            (bool success,) = targets[i].call{value: values[i]}(data[i]);
-            if (!success) revert ExecutionFailed(i);
+        for (uint256 i = 0; i < targets.length;) {
+            // Skip if target is address(0)
+            if (targets[i] == address(0)) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
+
+            (bool success, bytes memory result) = targets[i].call{value: values[i]}(data[i]);
+            if (!success) {
+                if (result.length == 0) revert ExecutionFailed(i);
+                assembly {
+                    revert(add(32, result), mload(result))
+                }
+            }
+            unchecked {
+                ++i;
+            }
         }
 
         emit BundleExecuted(targets, data);

@@ -6,7 +6,7 @@ import {Executor} from "../src/Executor.sol";
 
 contract ExecutorScript is Script {
     Executor public executor;
-    address public devAddress = address(0xabc);
+    address public devAddress = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
     function setUp() public {}
 
