@@ -48,7 +48,7 @@ contract ExecutorERC20Test is BaseExecutorTest {
 
         // Test withdrawal
         vm.prank(OWNER);
-        vm.expectRevert("Token transfer failed");
+        vm.expectRevert(Executor.ERC20TransferFailed.selector);
         executor.withdrawERC20(address(token), amount, ALICE);
 
         // Verify balances didn't change

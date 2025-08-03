@@ -60,7 +60,10 @@ contract ExecutorBundleTest is BaseExecutorTest {
 
         vm.prank(OWNER);
         vm.expectEmit(true, false, false, true);
-        emit BundleExecuted(targets, data);
+        bool[] memory expectedResults = new bool[](2);
+        expectedResults[0] = true;
+        expectedResults[1] = true;
+        emit BundleExecuted(targets, data, expectedResults);
         executor.bundleExecute(targets, data, values);
     }
 

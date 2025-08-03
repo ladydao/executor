@@ -11,20 +11,20 @@ interface IERC20 {
  * @title Executor
  * @notice Smart contract for executing arbitrary calls with access control
  * @dev Implements ownership, reentrancy protection, and asset management
- * @custom:security-contact security@example.com
  */
 contract Executor {
     address public immutable owner;
     bool private locked;
 
     event Executed(address indexed target, bytes data, bytes result);
-    event BundleExecuted(address[] indexed targets, bytes[] data);
+    event BundleExecuted(address[] indexed targets, bytes[] data, bool[] success);
     event ETHWithdrawn(uint256 amount, address indexed to);
     event ERC20Withdrawn(address indexed token, uint256 amount, address indexed to);
 
     error NotOwner();
     error InvalidTarget();
     error ExecutionFailed(uint256 index);
+    error ERC20TransferFailed();
     error MismatchedArrays();
     error NoTransactionData();
     error NoTargets();
@@ -85,7 +85,8 @@ contract Executor {
 
     /**
      * @notice Executes multiple transactions in sequence
-     * @dev Reverts if array lengths mismatch or any call fails
+     * @dev External calls are made in a loop - ensure sufficient gas is provided
+     * @dev Individual call failures are recorded in results array, not reverted
      * @param targets Array of contract addresses to call
      * @param data Array of call data for each target
      * @param values Array of ETH values for each call
@@ -110,28 +111,27 @@ contract Executor {
         }
         if (totalValue != msg.value) revert IncorectEthValue();
 
+        bool[] memory results = new bool[](targets.length);
+        
         for (uint256 i = 0; i < targets.length;) {
             // Skip if target is address(0)
             if (targets[i] == address(0)) {
+                results[i] = false;
                 unchecked {
                     ++i;
                 }
                 continue;
             }
 
-            (bool success, bytes memory result) = targets[i].call{value: values[i]}(data[i]);
-            if (!success) {
-                if (result.length == 0) revert ExecutionFailed(i);
-                assembly {
-                    revert(add(32, result), mload(result))
-                }
-            }
+            (bool success,) = targets[i].call{value: values[i]}(data[i]);
+            results[i] = success;
+            
             unchecked {
                 ++i;
             }
         }
 
-        emit BundleExecuted(targets, data);
+        emit BundleExecuted(targets, data, results);
     }
 
     /**
@@ -144,8 +144,15 @@ contract Executor {
         if (to == address(0)) revert ZeroAddress();
         require(address(this).balance >= amount, "Insufficient balance");
 
-        (bool success,) = to.call{value: amount}("");
-        require(success, "ETH transfer failed");
+        (bool success, bytes memory returnData) = to.call{value: amount}("");
+        if (!success) {
+            if (returnData.length > 0) {
+                assembly {
+                    revert(add(32, returnData), mload(returnData))
+                }
+            }
+            revert("ETH transfer failed");
+        }
 
         emit ETHWithdrawn(amount, to);
     }
@@ -163,7 +170,7 @@ contract Executor {
 
         IERC20 erc20 = IERC20(token);
         require(erc20.balanceOf(address(this)) >= amount, "Insufficient token balance");
-        require(erc20.transfer(to, amount), "Token transfer failed");
+        _safeTransfer(erc20, to, amount);
 
         emit ERC20Withdrawn(token, amount, to);
     }
@@ -182,6 +189,34 @@ contract Executor {
      */
     function getBalance() external view returns (uint256) {
         return address(this).balance;
+    }
+
+    /**
+     * @dev Safe ERC20 transfer implementation
+     * @param token ERC20 token interface
+     * @param to Recipient address  
+     * @param amount Amount to transfer
+     */
+    function _safeTransfer(IERC20 token, address to, uint256 amount) private {
+        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", to, amount);
+        (bool success, bytes memory returndata) = address(token).call(data);
+        
+        if (!success) {
+            // If call failed, check if there's revert data to bubble up
+            if (returndata.length > 0) {
+                assembly {
+                    revert(add(32, returndata), mload(returndata))
+                }
+            }
+            revert ERC20TransferFailed();
+        }
+        
+        // Check return value for tokens that return bool
+        if (returndata.length > 0) {
+            if (!abi.decode(returndata, (bool))) {
+                revert ERC20TransferFailed();
+            }
+        }
     }
 
     receive() external payable {}

@@ -56,7 +56,7 @@ contract BaseExecutorTest is Test {
     uint256 constant INITIAL_BALANCE = 100 ether;
 
     event Executed(address indexed target, bytes data, bytes result);
-    event BundleExecuted(address[] indexed targets, bytes[] data);
+    event BundleExecuted(address[] indexed targets, bytes[] data, bool[] success);
 
     function setUp() public virtual {
         executor = new Executor(OWNER);
