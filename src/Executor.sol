@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.30;
 
 interface IERC20 {
     function transfer(address recipient, uint256 amount) external returns (bool);
@@ -19,6 +19,8 @@ contract Executor {
 
     event Executed(address indexed target, bytes data, bytes result);
     event BundleExecuted(address[] indexed targets, bytes[] data);
+    event ETHWithdrawn(uint256 amount, address indexed to);
+    event ERC20Withdrawn(address indexed token, uint256 amount, address indexed to);
 
     error NotOwner();
     error InvalidTarget();
@@ -65,10 +67,10 @@ contract Executor {
      * @return result The raw bytes returned from the call
      */
     function execute(address target, bytes memory data)
-        public
+        external
         payable
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (bytes memory result)
     {
         if (target == address(0)) revert InvalidTarget();
@@ -89,10 +91,10 @@ contract Executor {
      * @param values Array of ETH values for each call
      */
     function bundleExecute(address[] memory targets, bytes[] memory data, uint256[] memory values)
-        public
+        external
         payable
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         if (targets.length != data.length || data.length != values.length) {
             revert MismatchedArrays();
@@ -138,9 +140,14 @@ contract Executor {
      * @param amount Amount of ETH in wei
      * @param to Recipient address
      */
-    function withdrawETH(uint256 amount, address payable to) public onlyOwner nonReentrant {
+    function withdrawETH(uint256 amount, address payable to) external nonReentrant onlyOwner {
+        if (to == address(0)) revert ZeroAddress();
         require(address(this).balance >= amount, "Insufficient balance");
-        to.transfer(amount);
+
+        (bool success,) = to.call{value: amount}("");
+        require(success, "ETH transfer failed");
+
+        emit ETHWithdrawn(amount, to);
     }
 
     /**
@@ -150,17 +157,22 @@ contract Executor {
      * @param amount Token amount in smallest unit
      * @param to Recipient address
      */
-    function withdrawERC20(address token, uint256 amount, address to) public onlyOwner nonReentrant {
+    function withdrawERC20(address token, uint256 amount, address to) external nonReentrant onlyOwner {
+        if (token == address(0)) revert ZeroAddress();
+        if (to == address(0)) revert ZeroAddress();
+
         IERC20 erc20 = IERC20(token);
         require(erc20.balanceOf(address(this)) >= amount, "Insufficient token balance");
         require(erc20.transfer(to, amount), "Token transfer failed");
+
+        emit ERC20Withdrawn(token, amount, to);
     }
 
     /**
      * @notice Gets contract owner address
      * @return Address of contract owner
      */
-    function getOwner() public view returns (address) {
+    function getOwner() external view returns (address) {
         return owner;
     }
 
@@ -168,7 +180,7 @@ contract Executor {
      * @notice Gets contract's ETH balance
      * @return Balance in wei
      */
-    function getBalance() public view returns (uint256) {
+    function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
 
