@@ -44,6 +44,57 @@ contract FailingTarget {
     }
 }
 
+contract ReentrantAttacker {
+    Executor public executorTarget;
+
+    constructor(address payable _executor) {
+        executorTarget = Executor(_executor);
+    }
+
+    fallback() external payable {
+        bytes memory data = abi.encodeWithSignature("doNothing()");
+        executorTarget.execute(address(this), data);
+    }
+}
+
+contract ETHRejectingContract {
+    receive() external payable {
+        revert();
+    }
+}
+
+contract ETHRejectingWithReasonContract {
+    receive() external payable {
+        revert("I reject your ETH");
+    }
+}
+
+contract RevertingERC20 {
+    mapping(address => uint256) public balanceOf;
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function transfer(address, uint256) external pure returns (bool) {
+        revert("Transfer not allowed");
+    }
+}
+
+contract NoReturnERC20 {
+    mapping(address => uint256) public balanceOf;
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function transfer(address recipient, uint256 amount) external {
+        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
+        balanceOf[msg.sender] -= amount;
+        balanceOf[recipient] += amount;
+    }
+}
+
 contract BaseExecutorTest is Test {
     Executor public executor;
     Target public target1;

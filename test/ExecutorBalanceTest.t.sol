@@ -44,4 +44,33 @@ contract ExecutorBalanceTest is BaseExecutorTest {
         vm.expectRevert("Insufficient balance");
         executor.withdrawETH(amount + 1, payable(ALICE));
     }
+
+    function testCannotWithdrawETHToZeroAddress() public {
+        uint256 amount = 1 ether;
+        vm.deal(address(executor), amount);
+
+        vm.prank(OWNER);
+        vm.expectRevert(Executor.ZeroAddress.selector);
+        executor.withdrawETH(amount, payable(address(0)));
+    }
+
+    function testCannotWithdrawETHToRejectingContract() public {
+        ETHRejectingContract rejecter = new ETHRejectingContract();
+        uint256 amount = 1 ether;
+        vm.deal(address(executor), amount);
+
+        vm.prank(OWNER);
+        vm.expectRevert("ETH transfer failed");
+        executor.withdrawETH(amount, payable(address(rejecter)));
+    }
+
+    function testCannotWithdrawETHBubblesRevertReason() public {
+        ETHRejectingWithReasonContract rejecter = new ETHRejectingWithReasonContract();
+        uint256 amount = 1 ether;
+        vm.deal(address(executor), amount);
+
+        vm.prank(OWNER);
+        vm.expectRevert("I reject your ETH");
+        executor.withdrawETH(amount, payable(address(rejecter)));
+    }
 }

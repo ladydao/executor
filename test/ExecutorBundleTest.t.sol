@@ -153,4 +153,26 @@ contract ExecutorBundleTest is BaseExecutorTest {
         executor.bundleExecute(targets, data, values);
         assertEq(target1.number(), 42);
     }
+
+    function testBundleExecuteSkipsZeroAddress() public {
+        address[] memory targets = new address[](3);
+        bytes[] memory data = new bytes[](3);
+        uint256[] memory values = new uint256[](3);
+
+        targets[0] = address(target1);
+        targets[1] = address(0);
+        targets[2] = address(target2);
+        data[0] = abi.encodeWithSelector(target1.setNumber.selector, 42);
+        data[1] = "";
+        data[2] = abi.encodeWithSelector(target2.setNumber.selector, 99);
+        values[0] = 0;
+        values[1] = 0;
+        values[2] = 0;
+
+        vm.prank(OWNER);
+        executor.bundleExecute(targets, data, values);
+
+        assertEq(target1.number(), 42);
+        assertEq(target2.number(), 99);
+    }
 }

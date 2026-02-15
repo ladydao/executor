@@ -67,4 +67,13 @@ contract ExecutorExecuteTest is BaseExecutorTest {
         vm.expectRevert(abi.encodeWithSelector(Executor.ExecutionFailed.selector, 0));
         executor.execute(address(failingTarget), data);
     }
+
+    function testCannotReenterExecute() public {
+        ReentrantAttacker attacker = new ReentrantAttacker(payable(address(executor)));
+
+        bytes memory data = abi.encodeWithSignature("doNothing()");
+        vm.prank(OWNER);
+        vm.expectRevert(abi.encodeWithSelector(Executor.ExecutionFailed.selector, 0));
+        executor.execute(address(attacker), data);
+    }
 }

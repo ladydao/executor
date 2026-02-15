@@ -55,4 +55,41 @@ contract ExecutorERC20Test is BaseExecutorTest {
         assertEq(token.balanceOf(address(executor)), amount);
         assertEq(token.balanceOf(ALICE), 0);
     }
+
+    function testCannotWithdrawERC20WithZeroToken() public {
+        vm.prank(OWNER);
+        vm.expectRevert(Executor.ZeroAddress.selector);
+        executor.withdrawERC20(address(0), 1000, ALICE);
+    }
+
+    function testCannotWithdrawERC20ToZeroAddress() public {
+        uint256 amount = 1000;
+        token.mint(address(executor), amount);
+
+        vm.prank(OWNER);
+        vm.expectRevert(Executor.ZeroAddress.selector);
+        executor.withdrawERC20(address(token), amount, address(0));
+    }
+
+    function testCannotWithdrawERC20BubblesRevertReason() public {
+        RevertingERC20 revertingToken = new RevertingERC20();
+        uint256 amount = 1000;
+        revertingToken.mint(address(executor), amount);
+
+        vm.prank(OWNER);
+        vm.expectRevert("Transfer not allowed");
+        executor.withdrawERC20(address(revertingToken), amount, ALICE);
+    }
+
+    function testWithdrawNonStandardERC20NoReturnData() public {
+        NoReturnERC20 nonStandardToken = new NoReturnERC20();
+        uint256 amount = 1000;
+        nonStandardToken.mint(address(executor), amount);
+
+        vm.prank(OWNER);
+        executor.withdrawERC20(address(nonStandardToken), amount, ALICE);
+
+        assertEq(nonStandardToken.balanceOf(address(executor)), 0);
+        assertEq(nonStandardToken.balanceOf(ALICE), amount);
+    }
 }
